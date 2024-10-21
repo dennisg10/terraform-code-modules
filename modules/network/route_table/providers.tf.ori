@@ -1,0 +1,7 @@
+provider "azurerm" {
+  tenant_id       = "21429da9-e4ad-45f9-9a6f-cd126a64274b"
+  subscription_id = "c4ee57c4-0b67-4c0c-b356-39331dcc5235"
+  features {
+
+  }
+}
