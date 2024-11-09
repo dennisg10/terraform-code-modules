@@ -1,0 +1,90 @@
+module "ag_rg" {
+  source                  = "../../../../modules/resource_group"
+  resource_group_name     = "CCC-PLC-ApplicationGatways"
+  resource_group_location = "westeurope"
+}
+
+module "ag_pip" {
+  source                  = "../../../../modules/network/public_ip"
+  resource_group_name     = module.ag_rg.name
+  resource_group_location = module.ag_rg.location
+  name                    = "CCC-PLC-AG01_PIP"
+  allocation_method       = "Static"
+  sku                     = "Standard"
+}
+
+
+module "ag" {
+  source                  = "../../../../modules/network/application_gateway"
+  name                    = "CCC-PLC-AG01"
+  resource_group_name     = module.ag_rg.name
+  resource_group_location = module.ag_rg.location
+  subnet_id               = module.special_subnets.subnet_obj["ApplicationGatewaySubnets"].id
+
+  //SKU
+  sku_name      = local.application_gatway_config.sku_name
+  sku_tier      = local.application_gatway_config.sku_tier
+  sku_capacitiy = local.application_gatway_config.sku_capacitiy
+
+  //Frontend Public IP Configuration
+  frontend_public_ip_configuration_name = local.frontend_config.public.name
+  frontend_public_ip_address            = module.ag_pip.id
+
+  //Frontend Private IP Configuration
+
+  frontend_private_ip_configuration_name = local.frontend_config.private.name
+  frontend_private_ip_address_allocation = local.frontend_config.private.allocation
+  frontend_private_ip_address            = local.frontend_config.private.ip_address
+
+
+  //FrontEndPort
+  frontend_http_port_name = local.frontend_port_config.http.name
+  frontend_http_port      = local.frontend_port_config.http.port
+
+  frontend_https_port_name = local.frontend_port_config.https.name
+  frontend_https_port      = local.frontend_port_config.https.port
+
+
+
+  //HTTP Listeners
+
+  //Listener Configuration
+  http_listener_name     = "sta.axxicom.nl_public_HTTP"
+  http_listener_protocol = "Http"
+
+  //Frontend Assoication
+  http_listener_frontend_ip_configuration_name = "FrontEndIP_Public"
+  http_listener_frontend_port_name             = "frontend_http_port"
+
+
+
+
+  //Backend Pool
+  backend_address_pool_name = "sta.axxicom.nl"
+
+  //Backend settings
+  backend_http_settings_name                  = "HTTP_80_sta.axxicom.nl"
+  backend_http_settings_port                  = 80
+  backend_http_settings_protocol              = "Http"
+  backend_http_settings_path                  = "/"
+  backend_http_settings_cookie_based_affinity = "Disabled"
+  backend_http_settings_request_timeout       = 60
+
+  //Request Routing rule
+  request_routing_rule_name      = "sta.axxicom.nl_public"
+  request_routing_rule_priority  = 10
+  request_routing_rule_rule_type = "Basic"
+
+  //Assoicated Listener
+  request_routing_http_listener_name = "sta.axxicom.nl_public_HTTP" // Associated HTTP listener name
+
+  //Assoicated Backendt Target
+  request_routing_rule_backend_address_pool_name  = "sta.axxicom.nl"
+  request_routing_rule_backend_http_settings_name = "HTTP_80_sta.axxicom.nl"
+
+}
+
+
+
+
+

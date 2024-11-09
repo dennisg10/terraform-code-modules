@@ -1,0 +1,53 @@
+module "private_dns_zones_rg" {
+  source                  = "../../../../modules/resource_group"
+  resource_group_name     = "CCC-PLC-DNS-Zones"
+  resource_group_location = "westeurope"
+}
+
+module "gen_private_dns_zones" {
+  source                  = "../../../../modules/private_dns_zone"
+  resource_group_name     = module.private_dns_zones_rg.name
+  resource_group_location = module.private_dns_zones_rg.location
+  private_dns_zones       = toset(local.private_dns_zones)
+
+}
+
+
+locals {
+  private_dns_zones = [
+    "privatelink.adf.azure.net",
+    "privatelink.azure-automation.net",
+    "privatelink.azure-devices-provisioning.net",
+    "privatelink.azure-devices.net",
+    "privatelink.azurecr.io",
+    "privatelink.azurewebsites.net",
+    "privatelink.blob.core.windows.net",
+    "privatelink.database.windows.net",
+    "privatelink.datafactory.azure.net",
+    "privatelink.dfs.core.windows.net",
+    "privatelink.dp.kubernetesconfiguration.azure.com",
+    "privatelink.file.core.windows.net",
+    "privatelink.guestconfiguration.azure.com",
+    "privatelink.his.arc.azure.com",
+    "privatelink.queue.core.windows.net",
+    "privatelink.servicebus.windows.net",
+    "privatelink.siterecovery.windowsazure.com",
+    "privatelink.table.core.windows.net",
+    "privatelink.vaultcore.azure.net",
+    "privatelink.we.backup.windowsazure.com"
+  ]
+}
+
+
+resource "azurerm_private_dns_zone_virtual_network_link" "private_dns-zone_link" {
+  for_each              = toset(local.private_dns_zones)
+  resource_group_name   = module.private_dns_zones_rg.name
+  name                  = "${module.vnet01.virtual_network_name}_link"
+  private_dns_zone_name = each.value
+  virtual_network_id    = module.vnet01.virtual_network_id
+  depends_on = [ module.vnet01 ]
+}
+
+output "pdz_obj" {
+  value = module.gen_private_dns_zones.pdz_obj
+}

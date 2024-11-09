@@ -1,0 +1,71 @@
+module "zbx_rg" {
+  source                  = "../../../../modules/resource_group"
+  resource_group_name     = "CCC-PLC-ZBX"
+  resource_group_location = "westeurope"
+}
+
+module "zbx_vm" {
+  source                  = "../../../../modules/compute/linux_virtual_machine_scale_set"
+  resource_group_name     = module.zbx_rg.name
+  resource_group_location = module.zbx_rg.location
+
+  vm_name        = "CCC-ZBX01P"
+  vm_sku         = "Standard_B2s"
+  instances      = 2
+  admin_username = "ce-bootstrap"
+
+  admin_ssh_key = {
+    public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCi+MKoD+GN6RlmZJ3+KbabKIoggRdCnqE6Io3pnxwwS+b0zvo9pamtoSl7Qj1ABmwnsWyULoOBDASrEAk6+/xew1qPZvMWctwwFHTmCAYJHwGyk3aF4/HBcwkcT4WRedKd4zIn+1eDsgyASpQe/XBOo0l2zr5GimxWds3nxLp9+ehiMOL7HUb25pgvyXEXfZfVVQYWPlua59JMIF0mLPqgU9gyiwL/9O1uOl1ozcGFe/vMNUBt1h9zrcIMQB1pz9e6FI7BURacbMID3lfggs3z0alITmPw1BfBDuFl/zsjMY9z2Ayi6IWcjV6xaMvFbwoUvfRDgL3wlsPoeT/ttjvp rsa-key-20240514"
+  }
+
+  source_image_reference = {
+    publisher = "Canonical"
+    offer     = "0001-com-ubuntu-server-jammy"
+    sku       = "22_04-lts"
+    version   = "latest"
+  }
+
+  subnet_id                     = module.subnets.subnet_obj["BackEndSubnets"].id
+  enable_accelerated_networking = false
+
+
+
+  caching                   = "ReadWrite"
+  storage_account_type      = "Standard_LRS"
+  disk_size_gb              = 127
+  write_accelerator_enabled = false
+
+  patch_mode          = "ImageDefault"
+  secure_boot_enabled = false
+  vtpm_enabled        = false
+
+
+  managed_identity_type = null
+
+  boot_diagnostics_enabled = false
+
+  data_disk = [
+
+    {
+      disk_size_gb         = 32
+      storage_account_type = "StandardSSD_LRS"
+      create_option        = "Empty"
+      caching              = "ReadWrite"
+    },
+    {
+      disk_size_gb         = 64
+      storage_account_type = "StandardSSD_LRS"
+      create_option        = "Empty"
+      caching              = "ReadWrite"
+    }
+
+  ]
+}
+
+
+
+
+
+
+
+

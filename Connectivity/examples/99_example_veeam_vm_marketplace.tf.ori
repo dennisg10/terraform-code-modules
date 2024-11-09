@@ -1,0 +1,90 @@
+module "veeam_rg" {
+  source                  = "../../../../modules/resource_group"
+  resource_group_name     = "CCC-PLC-VEEAM"
+  resource_group_location = "westeurope"
+}
+
+module "veeam_vm" {
+  source                  = "../../../../modules/compute/windows_virtual_machine_scale_set"
+  resource_group_name     = module.veeam_rg.name
+  resource_group_location = module.veeam_rg.location
+
+  vm_name = "CCC-VEEAM01P"
+  vm_size = "Standard_B2s"
+
+  source_image_reference = {
+    publisher = "veeam"
+    offer     = "veeam-backup-replication"
+    sku       = "veeam-backup-replication-v12"
+    version   = "latest"
+  }
+
+
+  marketplace_image = {
+    name = "veeam-backup-replication-v12"
+    product = "veeam-backup-replication"
+    publisher = "veeam"
+  }
+
+  private_ip_address_allocation = "Static"
+  private_ip_address            = "10.4.4.6"
+  subnet_id                     = module.subnets.subnet_obj["BackEndSubnets"].id
+  enable_accelerated_networking = false
+
+
+
+  caching                   = "ReadWrite"
+  storage_account_type      = "Standard_LRS"
+  disk_size_gb              = 127
+  write_accelerator_enabled = false
+
+  patch_mode               = "Manual"
+  enable_automatic_updates = false
+  hotpatching_enabled      = false
+
+  license_type        = "Windows_Server"
+  secure_boot_enabled = false
+  vtpm_enabled        = false
+
+
+  managed_identity_type = "UserAssigned"
+  managed_identity_ids  = [data.azurerm_user_assigned_identity.mi_vmdeployment.id]
+
+  boot_diagnostics_enabled = true
+
+
+}
+
+
+
+
+module "veeam_vm_cse" {
+  source             = "../../../../modules/compute/virtual_machine_extensions/custom_script_extension"
+  virtual_machine_id = module.veeam_vm.vm_id
+  fileUris = [
+    "https://cccplcvmdeployment.blob.core.windows.net/scripts/test.ps1",
+    "https://cccplcvmdeployment.blob.core.windows.net/scripts/IDS SNORT.docx",
+    "https://cccplcvmdeployment.blob.core.windows.net/scripts/Aantekeningen.txt"
+  ]
+  commandToExecute = "Powershell -ExecutionPolicy Unrestricted -File test.ps1"
+  managedIdentity  = "f0322fb5-4cf2-4ef9-888f-d9504a5efafd"
+
+
+  depends_on = [module.veeam_vm]
+}
+
+
+
+output "vm_veeam_id" {
+  value       = module.veeam_vm.vm_id
+  description = "Returns the ID of the Virtual Machine"
+}
+
+
+
+
+
+
+
+
+

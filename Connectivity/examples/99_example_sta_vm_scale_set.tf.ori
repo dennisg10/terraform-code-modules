@@ -1,0 +1,73 @@
+module "sta_rg" {
+  source                  = "../../../../modules/resource_group"
+  resource_group_name     = "CCC-PLC-STA"
+  resource_group_location = "westeurope"
+}
+
+module "sta_vm" {
+  source                  = "../../../../modules/compute/windows_virtual_machine_scale_set_scale_set"
+  resource_group_name     = module.sta_rg.name
+  resource_group_location = module.sta_rg.location
+
+  vm_name        = "CCC-STA01"
+  vm_sku         = "Standard_B2s"
+  admin_username = "local_admin"
+  admin_password = "P@ssw0rd123!!"
+  instances      = 2
+
+
+  source_image_reference = {
+    publisher = "MicrosoftWindowsServer"
+    offer     = "WindowsServer"
+    sku       = "2022-datacenter-g2"
+    version   = "latest"
+  }
+
+
+
+  subnet_id                     = module.subnets.subnet_obj["BackEndSubnets"].id
+  enable_accelerated_networking = false
+
+
+  caching                   = "ReadWrite"
+  storage_account_type      = "Standard_LRS"
+  disk_size_gb              = 127
+  write_accelerator_enabled = false
+
+  enable_automatic_updates = false
+
+  license_type        = "Windows_Server"
+  secure_boot_enabled = false
+  vtpm_enabled        = false
+
+
+  managed_identity_type = null
+
+  boot_diagnostics_enabled = false
+
+
+  data_disk = [
+
+    {
+      disk_size_gb         = 32
+      storage_account_type = "StandardSSD_LRS"
+      create_option        = "Empty"
+      caching              = "ReadWrite"
+    },
+    {
+      disk_size_gb         = 64
+      storage_account_type = "StandardSSD_LRS"
+      create_option        = "Empty"
+      caching              = "ReadWrite"
+    }
+
+  ]
+}
+
+
+
+
+
+
+
+

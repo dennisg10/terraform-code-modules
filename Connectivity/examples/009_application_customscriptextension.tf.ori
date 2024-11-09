@@ -1,0 +1,61 @@
+module "sa_cse_rg" {
+  source                  = "../../../../modules/resource_group"
+  resource_group_name     = "CCC-PLC-CustomScriptExtension"
+  resource_group_location = "westeurope"
+}
+
+module "sa_cse" {
+  source                   = "../../../../modules/storage_account"
+  resource_group_name      = module.sa_cse_rg.name
+  resource_group_location  = module.sa_cse_rg.location
+  name                     = "sacccplcvmdeployment"
+  account_tier             = "Standard"
+  account_replication_type = "LRS"
+  account_kind             = "StorageV2"
+  min_tls_version          = "TLS1_2"
+
+  network_rules = {
+    default_action = "Deny"
+    ip_rules = [
+      "31.20.8.201"
+    ]
+  }
+}
+
+
+  module "mi_cse" {
+    source = "../../../../modules/user_assigned_managed_identity"
+    name = "CCC-PLC-MI-CustomScriptExtension"
+    resource_group_name = module.sa_cse_rg.name
+    resource_group_location = module.sa_cse_rg.location 
+  }
+
+resource "azurerm_role_assignment" "sa_cse_ra" {
+  principal_id = module.mi_cse.principal_id
+  scope = module.sa_cse.id
+  role_definition_name = "Storage Blob Data Owner"
+
+}
+output "name" {
+  value = module.sa_cse.name
+}
+resource "azurerm_private_endpoint" "sa_cse_pe" {
+  name                          = "${module.sa_cse.name}_blob"
+  location                      = module.sa_cse_rg.location
+  resource_group_name           = module.sa_cse_rg.name
+  custom_network_interface_name = "${module.sa_cse.name}_blob"
+  subnet_id                     = module.subnets.subnet_obj["PrivateEndPointSubnets"].id
+
+  private_service_connection {
+    name                           = "priateserviceconnection"
+    private_connection_resource_id = module.sa_cse.id
+    subresource_names              = ["blob"]
+    is_manual_connection           = false
+  }
+
+  private_dns_zone_group {
+    name                 = "default"
+  private_dns_zone_ids = [module.gen_private_dns_zones.pdz_obj["privatelink.blob.core.windows.net"].id]
+  }
+}
+
