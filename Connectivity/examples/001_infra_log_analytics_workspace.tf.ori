@@ -1,0 +1,34 @@
+module "monitoring_law_rg" {
+  source                  = "../../../../modules/resource_group"
+  resource_group_name     = "CCC-PLC-Monitoring"
+  resource_group_location = "westeurope"
+}
+
+module "monitoring_laws" {
+  source                  = "../../../../modules/log_analytics_workspace"
+  resource_group_name     = module.monitoring_law_rg.name
+  resource_group_location = module.monitoring_law_rg.location
+
+  name              = "CCC-PLC-LAW-CSE-TEST"
+  retention_in_days = 30
+  sku               = "PerGB2018"
+
+}
+
+locals {
+  log_analytics_workspaces = [
+    "CCC-PLC-LAW-ActiveDirectory",
+    "CCC-PLC-LAW-Activity",
+    "CCC-PLC-LAW-Backup",
+    "CCC-PLC-LAW-Compute",
+    "CCC-PLC-LAW-Entra",
+    "CCC-PLC-LAW-KeyVaults",
+    "CCC-PLC-LAW-Network",
+    "CCC-PLC-LAW-Security",
+    "CCC-PLC-LAW-SiteRecovery",
+    "CCC-PLC-LAW-Storage"
+  ]
+}
+
+
+
